@@ -1,8 +1,4 @@
-use core::num;
 use std::collections::HashSet;
-use std::fs::File;
-use std::io::*;
-use std::ptr::null;
 use std::{cmp, io};
 
 #[allow(dead_code)]
@@ -35,11 +31,11 @@ pub fn solve(board: &str) -> HashSet<Vec<Vec<u32>>> {
     }
 
     let mut books = HashSet::new();
-    books = solveAllSoln(&mut grid, 0, 0, &mut books).to_owned();
+    books = solve_all_sol_n(&mut grid, 0, 0, &mut books).to_owned();
     return books;
 }
 
-fn is_safe(mut grid: &Vec<Vec<u32>>, num: u32, row: usize, col: usize) -> bool {
+fn is_safe(grid: &Vec<Vec<u32>>, num: u32, row: usize, col: usize) -> bool {
     let size = grid[0].len(); //grid size i.e. 9
 
     if grid[row].contains(&num) {
@@ -54,17 +50,17 @@ fn is_safe(mut grid: &Vec<Vec<u32>>, num: u32, row: usize, col: usize) -> bool {
         }
     }
 
-    let rowChop = row - row % 3; //3*3 block
-    let colChop = col - col % 3;
+    let row_chop = row - row % 3; //3*3 block
+    let col_chop = col - col % 3;
     // e.g. row = 2 col = 5
-    // rowchop = 2-2 = 0 colchop = 5 - 2 = 3
+    // row_chop = 2-2 = 0 col_chop = 5 - 2 = 3
     // then the search block would be block [0,1]
     // and the search cells would be row 0-> 2 and col 3->5
 
-    let mut i = rowChop;
-    while i <= rowChop + 2 {
-        let mut j = colChop;
-        while j <= colChop + 2 {
+    let mut i = row_chop;
+    while i <= row_chop + 2 {
+        let mut j = col_chop;
+        while j <= col_chop + 2 {
             if grid[i][j] == num {
                 //if the number already exists within that block then return false
                 return false;
@@ -77,11 +73,11 @@ fn is_safe(mut grid: &Vec<Vec<u32>>, num: u32, row: usize, col: usize) -> bool {
     return true;
 }
 
-fn solveAllSoln<'a>(
+fn solve_all_sol_n<'a>(
     grid: &'a mut Vec<Vec<u32>>,
     mut row: usize,
     mut col: usize,
-    mut resultSet: &'a mut HashSet<Vec<Vec<u32>>>,
+    mut result_set: &'a mut HashSet<Vec<Vec<u32>>>,
 ) -> &'a HashSet<Vec<Vec<u32>>> {
     let grid_size: usize = grid.len();
     // base case check if we reach the last cell i.e. row = 8 and col = 8
@@ -89,28 +85,28 @@ fn solveAllSoln<'a>(
         //grid_size = 8 for 9*9
 
         if grid[row][col] > 0 {
-            //if the cell in the last index has valid number then we save it to our resultSet
+            //if the cell in the last index has valid number then we save it to our result_set
 
-            resultSet.insert(grid.clone());
+            result_set.insert(grid.clone());
 
-            return resultSet;
+            return result_set;
         } else {
             //when the last cell is blank then we check for possible num to be in the cell
             for num in 1..=9 {
                 if is_safe(grid, num, row, col) {
                     grid[row][col] = num;
 
-                    resultSet.insert(grid.to_owned());
+                    result_set.insert(grid.to_owned());
 
-                    grid[row][col] = 0; // reset the grid[row][col] to 0 (unfilled) so, that we can search for other possible soln
+                    grid[row][col] = 0; // reset the grid[row][col] to 0 (unfilled) so, that we can search for other possible sol_n
                 }
             }
         }
-        return resultSet;
+        return result_set;
     }
 
     if col == grid_size {
-        return solveAllSoln(grid, row + 1, 0, resultSet);
+        return solve_all_sol_n(grid, row + 1, 0, result_set);
     }
     if grid[row][col] == 0 {
         //if cell is empty then check for all possible number
@@ -118,24 +114,37 @@ fn solveAllSoln<'a>(
             if is_safe(grid, num, row, col) {
                 grid[row][col] = num;
 
-                solveAllSoln(grid, row, col + 1, resultSet);
+                solve_all_sol_n(grid, row, col + 1, result_set);
                 grid[row][col] = 0;
             }
         }
     } else {
-        solveAllSoln(grid, row, col + 1, resultSet);
+        solve_all_sol_n(grid, row, col + 1, result_set);
     }
-    return resultSet;
+    return result_set;
 }
 
-fn shows_sol(inputs: HashSet<Vec<Vec<u32>>>) {
-    for big in inputs {
-        for line in big {
-            for cell in line {
-                print!("{}, ", cell);
-            }
-            println!("");
-        }
-        println!("");
+pub fn show_solutions(solutions: HashSet<Vec<Vec<u32>>>) {
+    for solution in solutions {
+        print_solution(&solution);
     }
+}
+
+fn print_solution(grid: &Vec<Vec<u32>>) {
+    for i in 0..9 {
+        if i % 3 == 0 && i != 0 {
+            println!("- - - + - - - + - - -");
+        }
+        for j in 0..9 {
+            if j % 3 == 0 && j != 0 {
+                print!("| ");
+            }
+            print!("{}", grid[i][j]);
+            if j != 8 {
+                print!(" ");
+            }
+        }
+        println!();
+    }
+    println!();
 }
