@@ -31,7 +31,7 @@ pub fn solve(board: &str) -> HashSet<Vec<Vec<u32>>> {
     }
 
     let mut books = HashSet::new();
-    solve_all_sol_n(&mut grid, 0, 0, &mut books);
+    solve_all_sol_n(&mut grid, &mut books);
     return books;
 }
 
@@ -51,40 +51,56 @@ fn is_safe(grid: &Vec<Vec<u32>>, num: u32, row: usize, col: usize) -> bool {
     true
 }
 
-// Recursive function to find all possible solutions for the given Sudoku grid
+// Add this function to find the next empty cell with the fewest legal values
+fn find_most_constrained_variable(grid: &Vec<Vec<u32>>) -> Option<(usize, usize)> {
+    let grid_size = grid.len();
+    let mut min_options = 10;
+    let mut mcv = None;
+
+    for row in 0..grid_size {
+        for col in 0..grid_size {
+            if grid[row][col] == 0 {
+                let mut options = 0;
+
+                for num in 1..=9 {
+                    if is_safe(grid, num, row, col) {
+                        options += 1;
+                    }
+                }
+
+                if options < min_options {
+                    min_options = options;
+                    mcv = Some((row, col));
+                }
+            }
+        }
+    }
+
+    mcv
+}
+
+// Modify the solve_all_sol_n function to use the MCV heuristic
 fn solve_all_sol_n<'a>(
     grid: &'a mut Vec<Vec<u32>>,
-    row: usize,
-    col: usize,
     result_set: &'a mut HashSet<Vec<Vec<u32>>>,
 ) {
     let grid_size: usize = grid.len();
 
-    // Base case: if the row index reaches the grid size, a solution is found
-    if row == grid_size {
-        result_set.insert(grid.clone());
-        return;
-    }
-
-    // Calculate the next row and column indices
-    let next_row = if col + 1 == grid_size { row + 1 } else { row };
-    let next_col = if col + 1 == grid_size { 0 } else { col + 1 };
-
-    // If the current cell already contains a number, move to the next cell
-    if grid[row][col] != 0 {
-        solve_all_sol_n(grid, next_row, next_col, result_set);
-    } else {
+    // Base case: if there is no empty cell, a solution is found
+    if let Some((row, col)) = find_most_constrained_variable(grid) {
         // Iterate through all possible numbers from 1 to 9
         for num in 1..=9 {
             // Check if the current number can be placed in the current cell
             if is_safe(grid, num, row, col) {
                 grid[row][col] = num;
-                // Recursively call the function for the next cell
-                solve_all_sol_n(grid, next_row, next_col, result_set);
+                // Recursively call the function
+                solve_all_sol_n(grid, result_set);
                 // Reset the current cell to 0 (unfilled) to search for other possible solutions
                 grid[row][col] = 0;
             }
         }
+    } else {
+        result_set.insert(grid.clone());
     }
 }
 

@@ -4,9 +4,9 @@ mod sudoku_starter;
 
 fn main() {
     println!("Hello, world!");
-    let board = "4.....8.5.3..........7......2.....6.....8.4......1.......6.3.7.5..2.....1.4......";
+    let board = "1.....3.8.7.4..............2.3.............958.........5.6...7.....8.2...4.......";
     let solutions = solve(board);
-    println!("Total solutions found: {}", solutions.len());
     println!("Solutions:");
-    show_solutions(solutions);
+    show_solutions(solutions.clone());
+    println!("Total solutions found: {}", solutions.len());
 }
