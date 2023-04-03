@@ -1,5 +1,5 @@
 use std::collections::HashSet;
-use std::{cmp, io};
+use std::{cmp};
 
 #[allow(dead_code)]
 pub fn solve(board: &str) -> HashSet<Vec<Vec<u32>>> {
@@ -30,81 +30,81 @@ pub fn solve(board: &str) -> HashSet<Vec<Vec<u32>>> {
         grid.push(row); //add the row vector to the grid
     }
 
-    let mut books = HashSet::new();
-    solve_all_sol_n(&mut grid, &mut books);
-    return books;
+    let mut solutions = HashSet::new();
+    solve_all_sol_n(&mut grid, &mut solutions);
+    solutions
 }
+
 
 // Check if the provided number can be placed in the given row and column of the grid
 fn is_safe(grid: &Vec<Vec<u32>>, num: u32, row: usize, col: usize) -> bool {
     // Calculate the starting row and column of the 3x3 block that contains the current cell
-    let (row_start, col_start) = (row / 3 * 3, col / 3 * 3);
+    let (row_start, col_start) = (row / &3 * 3, col / &3 * 3);
     let size = grid.len();
     // Iterate through all cells in the current row, column, and 3x3 block
     for i in 0..size {
         // Check if the number already exists in the current row, column, or 3x3 block
-        if grid[row][i] == num || grid[i][col] == num || grid[row_start + i / 3][col_start + i % 3] == num {
+        if grid[row][i] == num || grid[i][col] == num || grid[row_start + i % 3][col_start + i / 3] == num {
             return false;
         }
     }
     // If the number doesn't exist in the row, column, and 3x3 block, it is safe to place it in the cell
     true
 }
+
 // Add this function to find the next empty cell with the fewest legal values
 fn find_most_constrained_variable(grid: &Vec<Vec<u32>>) -> Option<(usize, usize)> {
     let grid_size = grid.len();
     let mut min_options = 10;
     let mut mcv = None;
 
-    for row in 0..grid_size {
-        for col in 0..grid_size {
+    (0..grid_size).into_iter().for_each(|row| {
+        (0..grid_size).into_iter().for_each(|col| {
             if grid[row][col] == 0 {
                 let mut options = 0;
 
-                for num in 1..=9 {
+                (1..=9).into_iter().for_each(|num| {
                     if is_safe(grid, num, row, col) {
                         options += 1;
                     }
-                }
+                });
 
                 if options < min_options {
                     min_options = options;
                     mcv = Some((row, col));
                 }
             }
-        }
-    }
+        });
+    });
 
     mcv
 }
 
-// Add this function to find the least constraining values for a given cell
 fn least_constraining_values(grid: &Vec<Vec<u32>>, row: usize, col: usize) -> Vec<u32> {
-    let mut values_with_constraints = Vec::new();
+    let mut lcv_values = (1..=9)
+        .into_iter()
+        .filter(|&num| is_safe(grid, num, row, col))
+        .map(|num| {
+            let constraints = (0..9)
+                .into_iter()
+                .filter(|&i| i != row && is_safe(grid, num, i, col) || i != col && is_safe(grid, num, row, i))
+                .count();
+            (num, constraints)
+        })
+        .collect::<Vec<(u32, usize)>>();
 
-    for num in 1..=9 {
-        if is_safe(grid, num, row, col) {
-            let mut constraints = 0;
+    // Sort by constraints (ascending order)
+    lcv_values.sort_unstable_by_key(|&(_, constraints)| constraints);
 
-            for i in 0..9 {
-                if i != row && is_safe(grid, num, i, col) {
-                    constraints += 1;
-                }
-
-                if i != col && is_safe(grid, num, row, i) {
-                    constraints += 1;
-                }
-            }
-
-            values_with_constraints.push((num, constraints));
-        }
+    // Extract values without constraints
+    let mut values = Vec::with_capacity(lcv_values.len());
+    for (value, _) in lcv_values {
+        values.push(value);
     }
 
-    values_with_constraints.sort_unstable_by_key(|&(_, constraints)| constraints);
-    values_with_constraints.into_iter().map(|(num, _)| num).collect()
+    values
 }
 
-// Modify the solve_all_sol_n function to use both MCV and LCV heuristics
 fn solve_all_sol_n<'a>(
     grid: &'a mut Vec<Vec<u32>>,
     result_set: &'a mut HashSet<Vec<Vec<u32>>>,
@@ -112,25 +112,23 @@ fn solve_all_sol_n<'a>(
     if let Some((row, col)) = find_most_constrained_variable(grid) {
         let lcv_values = least_constraining_values(grid, row, col);
 
-        for num in lcv_values {
+        lcv_values.iter().for_each(|&num| {
             if is_safe(grid, num, row, col) {
-                grid[row][col] = num;
-                solve_all_sol_n(grid, result_set);
-                grid[row][col] = 0;
+                let mut grid_copy = grid.clone();
+                grid_copy[row][col] = num;
+                solve_all_sol_n(&mut grid_copy, result_set);
             }
-        }
+        });
     } else {
         result_set.insert(grid.clone());
     }
 }
-
 
 pub fn show_solutions(solutions: HashSet<Vec<Vec<u32>>>) {
     for solution in solutions {
         print_solution(&solution);
     }
 }
-
 fn print_solution(grid: &Vec<Vec<u32>>) {
     let size = grid.len();
     for i in 0..size {
@@ -142,7 +140,7 @@ fn print_solution(grid: &Vec<Vec<u32>>) {
                 print!("| ");
             }
             print!("{}", grid[i][j]);
-            if j != size - 1 {
+            if j != size-1 {
                 print!(" ");
             }
         }
