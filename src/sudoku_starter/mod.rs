@@ -79,23 +79,44 @@ fn find_most_constrained_variable(grid: &Vec<Vec<u32>>) -> Option<(usize, usize)
     mcv
 }
 
-// Modify the solve_all_sol_n function to use the MCV heuristic
+// Add this function to find the least constraining values for a given cell
+fn least_constraining_values(grid: &Vec<Vec<u32>>, row: usize, col: usize) -> Vec<u32> {
+    let mut values_with_constraints = Vec::new();
+
+    for num in 1..=9 {
+        if is_safe(grid, num, row, col) {
+            let mut constraints = 0;
+
+            for i in 0..9 {
+                if i != row && is_safe(grid, num, i, col) {
+                    constraints += 1;
+                }
+
+                if i != col && is_safe(grid, num, row, i) {
+                    constraints += 1;
+                }
+            }
+
+            values_with_constraints.push((num, constraints));
+        }
+    }
+
+    values_with_constraints.sort_unstable_by_key(|&(_, constraints)| constraints);
+    values_with_constraints.into_iter().map(|(num, _)| num).collect()
+}
+
+// Modify the solve_all_sol_n function to use both MCV and LCV heuristics
 fn solve_all_sol_n<'a>(
     grid: &'a mut Vec<Vec<u32>>,
     result_set: &'a mut HashSet<Vec<Vec<u32>>>,
 ) {
-    let grid_size: usize = grid.len();
-
-    // Base case: if there is no empty cell, a solution is found
     if let Some((row, col)) = find_most_constrained_variable(grid) {
-        // Iterate through all possible numbers from 1 to 9
-        for num in 1..=9 {
-            // Check if the current number can be placed in the current cell
+        let lcv_values = least_constraining_values(grid, row, col);
+
+        for num in lcv_values {
             if is_safe(grid, num, row, col) {
                 grid[row][col] = num;
-                // Recursively call the function
                 solve_all_sol_n(grid, result_set);
-                // Reset the current cell to 0 (unfilled) to search for other possible solutions
                 grid[row][col] = 0;
             }
         }
@@ -103,6 +124,7 @@ fn solve_all_sol_n<'a>(
         result_set.insert(grid.clone());
     }
 }
+
 
 pub fn show_solutions(solutions: HashSet<Vec<Vec<u32>>>) {
     for solution in solutions {
@@ -121,7 +143,7 @@ fn print_solution(grid: &Vec<Vec<u32>>) {
                 print!("| ");
             }
             print!("{}", grid[i][j]);
-            if j != size-1 {
+            if j != size - 1 {
                 print!(" ");
             }
         }
