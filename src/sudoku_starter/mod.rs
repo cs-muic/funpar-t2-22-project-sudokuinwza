@@ -30,8 +30,9 @@ pub fn solve(board: &str) -> HashSet<Vec<Vec<u32>>> {
         grid.push(row); //add the row vector to the grid
     }
 
+    let mut domains = initialize_domains(&grid);
     let mut books = HashSet::new();
-    solve_all_sol_n(&mut grid, &mut books);
+    solve_all_sol_n(&mut grid, &mut domains, &mut books);
     return books;
 }
 
@@ -50,6 +51,7 @@ fn is_safe(grid: &Vec<Vec<u32>>, num: u32, row: usize, col: usize) -> bool {
     // If the number doesn't exist in the row, column, and 3x3 block, it is safe to place it in the cell
     true
 }
+
 // Add this function to find the next empty cell with the fewest legal values
 fn find_most_constrained_variable(grid: &Vec<Vec<u32>>) -> Option<(usize, usize)> {
     let grid_size = grid.len();
@@ -107,16 +109,20 @@ fn least_constraining_values(grid: &Vec<Vec<u32>>, row: usize, col: usize) -> Ve
 // Modify the solve_all_sol_n function to use both MCV and LCV heuristics
 fn solve_all_sol_n<'a>(
     grid: &'a mut Vec<Vec<u32>>,
+    domains: &'a mut Vec<Vec<HashSet<u32>>>,
     result_set: &'a mut HashSet<Vec<Vec<u32>>>,
 ) {
     if let Some((row, col)) = find_most_constrained_variable(grid) {
         let lcv_values = least_constraining_values(grid, row, col);
 
         for num in lcv_values {
-            if is_safe(grid, num, row, col) {
+            if domains[row][col].contains(&num) {
+                let old_domains = domains.clone();
                 grid[row][col] = num;
-                solve_all_sol_n(grid, result_set);
+                update_domains(domains, grid, row, col);
+                solve_all_sol_n(grid, domains, result_set);
                 grid[row][col] = 0;
+                *domains = old_domains;
             }
         }
     } else {
@@ -124,6 +130,42 @@ fn solve_all_sol_n<'a>(
     }
 }
 
+
+fn initialize_domains(grid: &Vec<Vec<u32>>) -> Vec<Vec<HashSet<u32>>> {
+    let size = grid.len();
+    let mut domains: Vec<Vec<HashSet<u32>>> = vec![vec![HashSet::new(); size]; size];
+
+    for row in 0..size {
+        for col in 0..size {
+            if grid[row][col] == 0 {
+                for num in 1..=9 {
+                    if is_safe(grid, num, row, col) {
+                        domains[row][col].insert(num);
+                    }
+                }
+            }
+        }
+    }
+
+    domains
+}
+
+fn update_domains(domains: &mut Vec<Vec<HashSet<u32>>>, grid: &Vec<Vec<u32>>, row: usize, col: usize) {
+    let size = grid.len();
+    let num = grid[row][col];
+
+    for i in 0..size {
+        domains[row][i].remove(&num);
+        domains[i][col].remove(&num);
+    }
+
+    let (row_start, col_start) = (row / 3 * 3, col / 3 * 3);
+    for i in 0..3 {
+        for j in 0..3 {
+            domains[row_start + i][col_start + j].remove(&num);
+        }
+    }
+}
 
 pub fn show_solutions(solutions: HashSet<Vec<Vec<u32>>>) {
     for solution in solutions {
