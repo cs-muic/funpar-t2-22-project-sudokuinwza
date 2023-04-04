@@ -52,7 +52,6 @@ fn is_safe(grid: &Vec<Vec<u32>>, num: u32, row: usize, col: usize) -> bool {
     true
 }
 
-// Add this function to find the next empty cell with the fewest legal values
 fn find_most_constrained_variable(grid: &Vec<Vec<u32>>) -> Option<(usize, usize)> {
     let grid_size = grid.len();
     let mut min_options = 10;
@@ -80,7 +79,6 @@ fn find_most_constrained_variable(grid: &Vec<Vec<u32>>) -> Option<(usize, usize)
     mcv
 }
 
-// Add this function to find the least constraining values for a given cell
 fn least_constraining_values(grid: &Vec<Vec<u32>>, row: usize, col: usize) -> Vec<u32> {
     let mut values_with_constraints = Vec::new();
 
